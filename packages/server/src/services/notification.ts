@@ -59,6 +59,7 @@ export const createSlackNotification = async (
 				notificationType: "slack",
 				organizationId: organizationId,
 				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.returning()
 			.then((value) => value[0]);
@@ -89,6 +90,7 @@ export const updateSlackNotification = async (
 				dockerCleanup: input.dockerCleanup,
 				organizationId: input.organizationId,
 				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.where(eq(notifications.notificationId, input.notificationId))
 			.returning()
@@ -150,6 +152,7 @@ export const createTelegramNotification = async (
 				notificationType: "telegram",
 				organizationId: organizationId,
 				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.returning()
 			.then((value) => value[0]);
@@ -180,6 +183,7 @@ export const updateTelegramNotification = async (
 				dockerCleanup: input.dockerCleanup,
 				organizationId: input.organizationId,
 				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.where(eq(notifications.notificationId, input.notificationId))
 			.returning()
@@ -241,6 +245,7 @@ export const createDiscordNotification = async (
 				notificationType: "discord",
 				organizationId: organizationId,
 				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.returning()
 			.then((value) => value[0]);
@@ -271,6 +276,7 @@ export const updateDiscordNotification = async (
 				dockerCleanup: input.dockerCleanup,
 				organizationId: input.organizationId,
 				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.where(eq(notifications.notificationId, input.notificationId))
 			.returning()
@@ -335,6 +341,7 @@ export const createEmailNotification = async (
 				notificationType: "email",
 				organizationId: organizationId,
 				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.returning()
 			.then((value) => value[0]);
@@ -365,6 +372,7 @@ export const updateEmailNotification = async (
 				dockerCleanup: input.dockerCleanup,
 				organizationId: input.organizationId,
 				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.where(eq(notifications.notificationId, input.notificationId))
 			.returning()
@@ -430,6 +438,8 @@ export const createGotifyNotification = async (
 				dockerCleanup: input.dockerCleanup,
 				notificationType: "gotify",
 				organizationId: organizationId,
+				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.returning()
 			.then((value) => value[0]);
@@ -459,6 +469,8 @@ export const updateGotifyNotification = async (
 				dokployRestart: input.dokployRestart,
 				dockerCleanup: input.dockerCleanup,
 				organizationId: input.organizationId,
+				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.where(eq(notifications.notificationId, input.notificationId))
 			.returning()
@@ -520,6 +532,8 @@ export const createNtfyNotification = async (
 				dockerCleanup: input.dockerCleanup,
 				notificationType: "ntfy",
 				organizationId: organizationId,
+				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.returning()
 			.then((value) => value[0]);
@@ -549,6 +563,8 @@ export const updateNtfyNotification = async (
 				dokployRestart: input.dokployRestart,
 				dockerCleanup: input.dockerCleanup,
 				organizationId: input.organizationId,
+				serverThreshold: input.serverThreshold,
+				newRelease: input.newRelease,
 			})
 			.where(eq(notifications.notificationId, input.notificationId))
 			.returning()

@@ -15,13 +15,13 @@ import {
 	runPostgresBackup,
 	runVolumeBackup,
 } from "@dokploy/server";
-import { db } from "@dokploy/server/dist/db";
+import { db } from "@dokploy/server/db";
 import {
 	backups,
 	schedules,
 	server,
 	volumeBackups,
-} from "@dokploy/server/dist/db/schema";
+} from "@dokploy/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { logger } from "./logger.js";
 import { scheduleJob } from "./queue.js";
@@ -106,6 +106,10 @@ export const runJobs = async (job: QueueJob) => {
 			if (volumeBackup.enabled) {
 				await runVolumeBackup(volumeBackupId);
 			}
+		} else if (job.type === "release-check") {
+			// Import the checkForNewReleases function dynamically to avoid circular dependencies
+			const { checkForNewReleases } = await import("@dokploy/server/services/settings");
+			await checkForNewReleases();
 		}
 	} catch (error) {
 		logger.error(error);
@@ -237,4 +241,12 @@ export const initializeJobs = async () => {
 		{ Quantity: filteredVolumeBackupsBasedOnServerStatus.length },
 		"Volume Backups Initialized",
 	);
+
+	// Initialize release check job (runs daily at 8:10 PM IST / 2:40 PM UTC)
+	scheduleJob({
+		type: "release-check",
+		cronSchedule: "40 14 * * *", // Daily at 2:40 PM UTC (8:10 PM IST)
+	});
+
+	logger.info("Release Check Job Initialized");
 };

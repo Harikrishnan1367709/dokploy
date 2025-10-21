@@ -1,0 +1,1 @@
+ALTER TABLE "notification" ADD COLUMN "newRelease" boolean DEFAULT false NOT NULL;

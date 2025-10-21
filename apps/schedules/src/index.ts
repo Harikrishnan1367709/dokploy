@@ -67,6 +67,11 @@ app.post("/update-backup", zValidator("json", jobQueueSchema), async (c) => {
 				type: "volume-backup",
 				cronSchedule: job.pattern,
 			});
+		} else if (data.type === "release-check") {
+			result = await removeJob({
+				type: "release-check",
+				cronSchedule: job.pattern,
+			});
 		}
 		logger.info({ result }, "Job removed");
 	}

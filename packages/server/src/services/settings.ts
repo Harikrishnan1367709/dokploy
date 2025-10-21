@@ -10,6 +10,26 @@ import {
 	initializeTraefikService,
 	type TraefikOptions,
 } from "../setup/traefik-setup";
+import { sendNewReleaseNotifications } from "@dokploy/server/utils/notifications/new-release";
+import packageInfo from "../../package.json";
+
+// Simple semantic version comparison function
+const compareVersions = (version1: string, version2: string): number => {
+	const v1Parts = version1.split('.').map(Number);
+	const v2Parts = version2.split('.').map(Number);
+	
+	const maxLength = Math.max(v1Parts.length, v2Parts.length);
+	
+	for (let i = 0; i < maxLength; i++) {
+		const v1Part = v1Parts[i] || 0;
+		const v2Part = v2Parts[i] || 0;
+		
+		if (v1Part > v2Part) return 1;
+		if (v1Part < v2Part) return -1;
+	}
+	
+	return 0;
+};
 
 export interface IUpdateData {
 	latestVersion: string | null;
@@ -107,6 +127,71 @@ export const getUpdateData = async (): Promise<IUpdateData> => {
 	}
 	const updateAvailable = searchedDigest !== currentDigest;
 	return { latestVersion: imageTag, updateAvailable };
+};
+
+interface GitHubRelease {
+	tag_name: string;
+	name: string;
+	body: string;
+	published_at: string;
+	html_url: string;
+}
+
+interface ReleaseInfo {
+	version: string;
+	releaseNotes?: string;
+	downloadUrl?: string;
+	publishedAt: Date;
+}
+
+/** Checks for new GitHub releases and sends notifications if a new release is found */
+export const checkForNewReleases = async (): Promise<ReleaseInfo | null> => {
+	try {
+		// Get the latest release from GitHub API
+		const response = await fetch("https://api.github.com/repos/dokploy/dokploy/releases/latest", {
+			method: "GET",
+			headers: {
+				"Accept": "application/vnd.github.v3+json",
+				"User-Agent": "Dokploy-Release-Checker",
+			},
+		});
+
+		if (!response.ok) {
+			console.error("Failed to fetch GitHub release:", response.status, response.statusText);
+			return null;
+		}
+
+		const release: GitHubRelease = await response.json();
+		
+		// Get current version from package.json
+		const currentVersion = packageInfo.version;
+		const latestVersion = release.tag_name.startsWith('v') ? release.tag_name.substring(1) : release.tag_name;
+		
+		// Compare versions using semantic version comparison
+		const isNewerVersion = compareVersions(latestVersion, currentVersion) > 0;
+		
+		if (!isNewerVersion) {
+			console.log("No new release available. Current version:", currentVersion, "Latest version:", latestVersion);
+			return null;
+		}
+
+		console.log("New release found:", latestVersion, "Current version:", currentVersion);
+
+		const releaseInfo: ReleaseInfo = {
+			version: latestVersion,
+			releaseNotes: release.body || undefined,
+			downloadUrl: release.html_url,
+			publishedAt: new Date(release.published_at),
+		};
+
+		// Send notifications for the new release
+		await sendNewReleaseNotifications(releaseInfo);
+
+		return releaseInfo;
+	} catch (error) {
+		console.error("Error checking for new releases:", error);
+		return null;
+	}
 };
 
 interface TreeDataItem {

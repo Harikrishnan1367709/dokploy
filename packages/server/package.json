@@ -1,22 +1,27 @@
 {
   "name": "@dokploy/server",
-  "version": "1.0.0",
+  "version": "0.25.4",
   "main": "./src/index.ts",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./db": {
-      "import": "./src/db/index.ts",
-      "require": "./dist/db/index.cjs.js"
-    },
-    "./setup/*": {
-      "import": "./src/setup/*.ts",
-      "require": "./dist/setup/index.cjs.js"
-    },
-    "./constants": {
-      "import": "./src/constants/index.ts",
-      "require": "./dist/constants.cjs.js"
-    }
+    "./db": "./src/db/index.ts",
+    "./db/*": "./src/db/*.ts",
+    "./db/schema": "./src/db/schema/index.ts",
+    "./db/schema/*": "./src/db/schema/*.ts",
+    "./services/*": "./src/services/*.ts",
+    "./utils/*": "./src/utils/*.ts",
+    "./utils/builders": "./src/utils/builders/index.ts",
+    "./emails/*": "./src/emails/*.ts",
+    "./emails/*.tsx": "./src/emails/*.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./types/*": "./src/types/*.ts",
+    "./setup/*": "./src/setup/*.ts",
+    "./monitoring/*": "./src/monitoring/*.ts",
+    "./templates": "./src/templates/index.ts",
+    "./templates/*": "./src/templates/*.ts",
+    "./constants": "./src/constants/index.ts",
+    "./constants/*": "./src/constants/*.ts"
   },
   "scripts": {
     "build": "npm run switch:prod && rm -rf ./dist && tsc --project tsconfig.server.json && tsc-alias -p tsconfig.server.json",

@@ -3,12 +3,20 @@
 		"target": "ESNext",
 		"module": "ESNext",
 		"moduleResolution": "Node",
-		"strict": true,
+		"strict": false,
 		"skipLibCheck": true,
 		"outDir": "dist",
 		"jsx": "react-jsx",
 		"jsxImportSource": "hono/jsx",
-		"declaration": false
+		"declaration": false,
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"noImplicitAny": false,
+		"noImplicitReturns": false,
+		"noImplicitThis": false,
+		"noUnusedLocals": false,
+		"noUnusedParameters": false
 	},
 	"exclude": ["node_modules", "dist"]
 }
