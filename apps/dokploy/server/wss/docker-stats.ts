@@ -49,7 +49,7 @@ export const setupDockerStatsMonitoringSocketServer = (
 		}
 		const intervalId = setInterval(async () => {
 			try {
-				const filter = {
+				let filter = {
 					status: ["running"],
 					...(appType === "application" && {
 						label: [`com.docker.swarm.service.name=${appName}`],
@@ -62,11 +62,40 @@ export const setupDockerStatsMonitoringSocketServer = (
 					}),
 				};
 
-				const containers = await docker.listContainers({
+				let containers = await docker.listContainers({
 					filters: JSON.stringify(filter),
 				});
 
-				const container = containers[0];
+				let container = containers[0];
+
+				// If not found with initial filter, try standalone container by name
+				if (!container || container?.State !== "running") {
+					filter = {
+						status: ["running"],
+						name: [appName],
+					};
+
+					containers = await docker.listContainers({
+						filters: JSON.stringify(filter),
+					});
+
+					container = containers[0];
+				}
+
+				// If still not found, try docker-compose project filter
+				if (!container || container?.State !== "running") {
+					filter = {
+						status: ["running"],
+						label: [`com.docker.compose.project=${appName}`],
+					};
+
+					containers = await docker.listContainers({
+						filters: JSON.stringify(filter),
+					});
+
+					container = containers[0];
+				}
+
 				if (!container || container?.State !== "running") {
 					ws.close(4000, "Container not running");
 					return;

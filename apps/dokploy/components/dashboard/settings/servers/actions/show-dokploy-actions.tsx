@@ -54,7 +54,7 @@ export const ShowDokployActions = () => {
 					<TerminalModal serverId="local">
 						<span>{t("settings.common.enterTerminal")}</span>
 					</TerminalModal>
-					<ShowModalLogs appName="dokploy">
+					<ShowModalLogs appName="dokploy" type="standalone">
 						<DropdownMenuItem
 							className="cursor-pointer"
 							onSelect={(e) => e.preventDefault()}

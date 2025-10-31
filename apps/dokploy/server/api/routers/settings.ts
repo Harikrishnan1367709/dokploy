@@ -272,12 +272,12 @@ export const settingsRouter = createTRPCRouter({
 					}
 					if (IS_CLOUD) {
 						await schedule({
-							cronSchedule: "0 0 * * *",
+							cronSchedule: "35 9 * * *",
 							serverId: input.serverId,
 							type: "server",
 						});
 					} else {
-						scheduleJob(server.serverId, "0 0 * * *", async () => {
+						scheduleJob(server.serverId, "35 9 * * *", async () => {
 							console.log(
 								`Docker Cleanup ${new Date().toLocaleString()}] Running...`,
 							);
@@ -290,7 +290,7 @@ export const settingsRouter = createTRPCRouter({
 				} else {
 					if (IS_CLOUD) {
 						await removeJob({
-							cronSchedule: "0 0 * * *",
+							cronSchedule: "35 9 * * *",
 							serverId: input.serverId,
 							type: "server",
 						});
@@ -305,7 +305,7 @@ export const settingsRouter = createTRPCRouter({
 				});
 
 				if (userUpdated?.enableDockerCleanup) {
-					scheduleJob("docker-cleanup", "0 0 * * *", async () => {
+					scheduleJob("docker-cleanup", "35 9 * * *", async () => {
 						console.log(
 							`Docker Cleanup ${new Date().toLocaleString()}] Running...`,
 						);

@@ -677,16 +677,46 @@ export const rebuildRemoteApplication = async ({
 };
 
 export const getApplicationStats = async (appName: string) => {
-	const filter = {
+	// First try Swarm service filter
+	let filter = {
 		status: ["running"],
 		label: [`com.docker.swarm.service.name=${appName}`],
 	};
 
-	const containers = await docker.listContainers({
+	let containers = await docker.listContainers({
 		filters: JSON.stringify(filter),
 	});
 
-	const container = containers[0];
+	let container = containers[0];
+
+	// If not found in Swarm, try standalone container by name
+	if (!container || container?.State !== "running") {
+		filter = {
+			status: ["running"],
+			name: [appName],
+		};
+
+		containers = await docker.listContainers({
+			filters: JSON.stringify(filter),
+		});
+
+		container = containers[0];
+	}
+
+	// If still not found, try docker-compose project filter
+	if (!container || container?.State !== "running") {
+		filter = {
+			status: ["running"],
+			label: [`com.docker.compose.project=${appName}`],
+		};
+
+		containers = await docker.listContainers({
+			filters: JSON.stringify(filter),
+		});
+
+		container = containers[0];
+	}
+
 	if (!container || container?.State !== "running") {
 		return null;
 	}

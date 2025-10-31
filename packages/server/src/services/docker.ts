@@ -287,28 +287,77 @@ export const getContainersByAppLabel = async (
 	try {
 		let stdout = "";
 		let stderr = "";
+		let command = "";
 
-		const command =
-			type === "swarm"
-				? `docker ps --filter "label=com.docker.swarm.service.name=${appName}" --format 'CONTAINER ID : {{.ID}} | Name: {{.Names}} | State: {{.State}}'`
-				: type === "standalone"
-					? `docker ps --filter "name=${appName}" --format 'CONTAINER ID : {{.ID}} | Name: {{.Names}} | State: {{.State}}'`
-					: `docker ps --filter "label=com.docker.compose.project=${appName}" --format 'CONTAINER ID : {{.ID}} | Name: {{.Names}} | State: {{.State}}'`;
+		// Build command based on type
+		if (type === "swarm") {
+			command = `docker ps --filter "label=com.docker.swarm.service.name=${appName}" --format 'CONTAINER ID : {{.ID}} | Name: {{.Names}} | State: {{.State}}'`;
+		} else if (type === "standalone") {
+			command = `docker ps --filter "name=${appName}" --format 'CONTAINER ID : {{.ID}} | Name: {{.Names}} | State: {{.State}}'`;
+		} else {
+			command = `docker ps --filter "label=com.docker.compose.project=${appName}" --format 'CONTAINER ID : {{.ID}} | Name: {{.Names}} | State: {{.State}}'`;
+		}
+
+		// Execute command
+		let result;
 		if (serverId) {
-			const result = await execAsyncRemote(serverId, command);
+			result = await execAsyncRemote(serverId, command);
 			stdout = result.stdout;
 			stderr = result.stderr;
 		} else {
-			const result = await execAsync(command);
+			result = await execAsync(command);
 			stdout = result.stdout;
 			stderr = result.stderr;
 		}
+
 		if (stderr) {
 			console.error(`Error: ${stderr}`);
-			return;
+			// Don't return early, try fallback
 		}
 
-		if (!stdout) return [];
+		// If no results and type is standalone, try alternative search patterns
+		if ((!stdout || stdout.trim() === "") && type === "standalone") {
+			// Try exact name match
+			command = `docker ps --filter "name=^${appName}$" --format 'CONTAINER ID : {{.ID}} | Name: {{.Names}} | State: {{.State}}'`;
+			
+			if (serverId) {
+				result = await execAsyncRemote(serverId, command);
+				stdout = result.stdout;
+				stderr = result.stderr;
+			} else {
+				result = await execAsync(command);
+				stdout = result.stdout;
+				stderr = result.stderr;
+			}
+
+			// If still no results, try searching all running containers and filter by name containing appName
+			if (!stdout || stdout.trim() === "") {
+				command = `docker ps --format 'CONTAINER ID : {{.ID}} | Name: {{.Names}} | State: {{.State}}'`;
+				
+				if (serverId) {
+					result = await execAsyncRemote(serverId, command);
+					stdout = result.stdout;
+				} else {
+					result = await execAsync(command);
+					stdout = result.stdout;
+				}
+
+				// Filter results to containers whose name contains appName
+				if (stdout) {
+					const allLines = stdout.trim().split("\n");
+					const filteredLines = allLines.filter((line) => {
+						const parts = line.split(" | ");
+						const name = parts[1]?.replace("Name: ", "").trim() || "";
+						return name.toLowerCase().includes(appName.toLowerCase());
+					});
+					stdout = filteredLines.join("\n");
+				}
+			}
+		}
+
+		if (!stdout || stdout.trim() === "") {
+			return [];
+		}
 
 		const lines = stdout.trim().split("\n");
 
@@ -331,9 +380,10 @@ export const getContainersByAppLabel = async (
 		});
 
 		return containers || [];
-	} catch {}
-
-	return [];
+	} catch (error) {
+		console.error(`Error getting containers for ${appName}:`, error);
+		return [];
+	}
 };
 
 export const containerRestart = async (containerId: string) => {
