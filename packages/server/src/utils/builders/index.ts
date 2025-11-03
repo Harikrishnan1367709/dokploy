@@ -56,7 +56,7 @@ export const buildApplication = async (
 
 		// Legacy: Check if this is a Mule JAR deployment (drop source with JAR file)
 		// This is kept for backward compatibility, but new deployments should use mulesoft build type
-		if (sourceType === "drop" && buildType !== "mulesoft") {
+		if (sourceType === "drop") {
 			const { APPLICATIONS_PATH } = paths(!!application.serverId);
 			const codePath = pathModule.join(APPLICATIONS_PATH, application.appName, "code");
 			
