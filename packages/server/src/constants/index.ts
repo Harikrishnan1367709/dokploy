@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as pathModule from "node:path";
 import Docker from "dockerode";
 
 export const IS_CLOUD = process.env.IS_CLOUD === "true";
@@ -8,7 +8,7 @@ export const paths = (isServer = false) => {
 	const BASE_PATH =
 		isServer || process.env.NODE_ENV === "production"
 			? "/etc/dokploy"
-			: path.join(process.cwd(), ".docker");
+			: pathModule.join(process.cwd(), ".docker");
 	const MAIN_TRAEFIK_PATH = `${BASE_PATH}/traefik`;
 	const DYNAMIC_TRAEFIK_PATH = `${MAIN_TRAEFIK_PATH}/dynamic`;
 

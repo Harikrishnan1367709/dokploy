@@ -11,12 +11,17 @@ import {
 	prepareEnvironmentVariables,
 } from "../docker/utils";
 import { getRemoteDocker } from "../servers/remote-docker";
+import { execAsync, execAsyncRemote } from "../process/execAsync";
+import { paths } from "@dokploy/server/constants";
 import { buildCustomDocker, getDockerCommand } from "./docker-file";
 import { buildHeroku, getHerokuCommand } from "./heroku";
+import { buildMule } from "./mule";
 import { buildNixpacks, getNixpacksCommand } from "./nixpacks";
 import { buildPaketo, getPaketoCommand } from "./paketo";
 import { buildRailpack, getRailpackCommand } from "./railpack";
 import { buildStatic, getStaticCommand } from "./static";
+import * as pathModule from "node:path";
+import fs from "node:fs/promises";
 
 // NIXPACKS codeDirectory = where is the path of the code directory
 // HEROKU codeDirectory = where is the path of the code directory
@@ -41,6 +46,47 @@ export const buildApplication = async (
 	const writeStream = createWriteStream(logPath, { flags: "a" });
 	const { buildType, sourceType } = application;
 	try {
+		// Check if this is a Mulesoft build type (explicit selection)
+		if (buildType === "mulesoft") {
+			writeStream.write("\n=== Mulesoft Build Type ===\n");
+			writeStream.end(); // Close this writeStream since buildMule will create its own
+			await buildMule(application, logPath);
+			return;
+		}
+
+		// Legacy: Check if this is a Mule JAR deployment (drop source with JAR file)
+		// This is kept for backward compatibility, but new deployments should use mulesoft build type
+		if (sourceType === "drop" && buildType !== "mulesoft") {
+			const { APPLICATIONS_PATH } = paths(!!application.serverId);
+			const codePath = pathModule.join(APPLICATIONS_PATH, application.appName, "code");
+			
+			let hasJarFile = false;
+			try {
+				if (application.serverId) {
+					// Check for any JAR file in the code directory
+					const { stdout } = await execAsyncRemote(
+						application.serverId,
+						`find "${codePath}" -maxdepth 1 -name "*.jar" -type f 2>/dev/null | head -n 1`,
+					);
+					hasJarFile = stdout.trim().length > 0;
+				} else {
+					// Check locally
+					const files = await fs.readdir(codePath);
+					hasJarFile = files.some(f => f.endsWith(".jar"));
+				}
+			} catch {
+				hasJarFile = false;
+			}
+
+			if (hasJarFile) {
+				writeStream.write("\n=== Mule JAR Deployment Detected (Legacy) ===\n");
+				writeStream.write("⚠️  Consider using 'Mulesoft' build type instead\n");
+				writeStream.end(); // Close this writeStream since buildMule will create its own
+				await buildMule(application, logPath);
+				return;
+			}
+		}
+
 		writeStream.write(
 			`\nBuild ${buildType}: ✅\nSource Type: ${sourceType}: ✅\n`,
 		);

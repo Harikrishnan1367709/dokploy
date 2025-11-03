@@ -63,6 +63,7 @@ export const buildType = pgEnum("buildType", [
 	"nixpacks",
 	"static",
 	"railpack",
+	"mulesoft",
 ]);
 
 export const applications = pgTable("application", {
@@ -290,6 +291,7 @@ const createSchema = createInsertSchema(applications, {
 		"nixpacks",
 		"static",
 		"railpack",
+		"mulesoft",
 	]),
 	railpackVersion: z.string().optional(),
 	herokuVersion: z.string().optional(),

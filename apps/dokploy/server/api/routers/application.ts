@@ -21,6 +21,7 @@ import {
 	startServiceRemote,
 	stopService,
 	stopServiceRemote,
+	handleJarDrop,
 	unzipDrop,
 	updateApplication,
 	updateApplicationStatus,
@@ -764,7 +765,7 @@ export const applicationRouter = createTRPCRouter({
 		.use(uploadProcedure)
 		.input(uploadFileSchema)
 		.mutation(async ({ input, ctx }) => {
-			const zipFile = input.zip;
+			const file = input.zip;
 
 			const app = await findApplicationById(input.applicationId as string);
 
@@ -778,12 +779,25 @@ export const applicationRouter = createTRPCRouter({
 				});
 			}
 
+			// Detect file type
+			const fileName = file.name.toLowerCase();
+			const isJarFile = fileName.endsWith(".jar");
+
 			await updateApplication(input.applicationId as string, {
 				sourceType: "drop",
 				dropBuildPath: input.dropBuildPath || "",
 			});
 
-			await unzipDrop(zipFile, app);
+			if (isJarFile) {
+				// Handle JAR file (especially Mule JAR)
+				const { isMule } = await handleJarDrop(file, app);
+				// Store isMule flag in a way we can access during build
+				// We'll check for JAR file existence during build
+			} else {
+				// Handle ZIP file (existing behavior)
+				await unzipDrop(file, app);
+			}
+
 			const jobData: DeploymentJob = {
 				applicationId: app.applicationId,
 				titleLog: "Manual deployment",

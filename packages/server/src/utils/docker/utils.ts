@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import path from "node:path";
+import * as pathModule from "node:path";
 import type { Readable } from "node:stream";
 import { docker, paths } from "@dokploy/server/constants";
 import type { Compose } from "@dokploy/server/services/compose";
@@ -494,13 +494,13 @@ export const generateFileMounts = (
 		return [];
 	}
 
-	return mounts
+		return mounts
 		.filter((mount) => mount.type === "file")
 		.map((mount) => {
 			const fileName = mount.filePath;
-			const absoluteBasePath = path.resolve(APPLICATIONS_PATH);
-			const directory = path.join(absoluteBasePath, appName, "files");
-			const sourcePath = path.join(directory, fileName || "");
+			const absoluteBasePath = pathModule.resolve(APPLICATIONS_PATH);
+			const directory = pathModule.join(absoluteBasePath, appName, "files");
+			const sourcePath = pathModule.join(directory, fileName || "");
 			return {
 				Type: "bind" as const,
 				Source: sourcePath,
@@ -513,15 +513,15 @@ export const createFile = async (
 	outputPath: string,
 	filePath: string,
 	content: string,
-) => {
+): Promise<void> => {
 	try {
-		const fullPath = path.join(outputPath, filePath);
-		if (fullPath.endsWith(path.sep) || filePath.endsWith("/")) {
+		const fullPath = pathModule.join(outputPath, filePath);
+		if (fullPath.endsWith(pathModule.sep) || filePath.endsWith("/")) {
 			fs.mkdirSync(fullPath, { recursive: true });
 			return;
 		}
 
-		const directory = path.dirname(fullPath);
+		const directory = pathModule.dirname(fullPath);
 		fs.mkdirSync(directory, { recursive: true });
 		fs.writeFileSync(fullPath, content || "");
 	} catch (error) {
@@ -536,12 +536,12 @@ export const getCreateFileCommand = (
 	filePath: string,
 	content: string,
 ) => {
-	const fullPath = path.join(outputPath, filePath);
-	if (fullPath.endsWith(path.sep) || filePath.endsWith("/")) {
+	const fullPath = pathModule.join(outputPath, filePath);
+	if (fullPath.endsWith(pathModule.sep) || filePath.endsWith("/")) {
 		return `mkdir -p ${fullPath};`;
 	}
 
-	const directory = path.dirname(fullPath);
+	const directory = pathModule.dirname(fullPath);
 	const encodedContent = encodeBase64(content);
 	return `
 		mkdir -p ${directory};

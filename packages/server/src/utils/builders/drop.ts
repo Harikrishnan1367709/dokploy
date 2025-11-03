@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import path, { join } from "node:path";
+import * as pathModule from "node:path";
 import { paths } from "@dokploy/server/constants";
 import type { Application } from "@dokploy/server/services/application";
 import { findServerById } from "@dokploy/server/services/server";
@@ -17,7 +17,7 @@ export const unzipDrop = async (zipFile: File, application: Application) => {
 	try {
 		const { appName } = application;
 		const { APPLICATIONS_PATH } = paths(!!application.serverId);
-		const outputPath = join(APPLICATIONS_PATH, appName, "code");
+		const outputPath = pathModule.join(APPLICATIONS_PATH, appName, "code");
 		if (application.serverId) {
 			await recreateDirectoryRemote(outputPath, application.serverId);
 		} else {
@@ -61,13 +61,13 @@ export const unzipDrop = async (zipFile: File, application: Application) => {
 
 			if (!filePath) continue;
 
-			const fullPath = path.join(outputPath, filePath).replace(/\\/g, "/");
+			const fullPath = pathModule.join(outputPath, filePath).replace(/\\/g, "/");
 
 			if (application.serverId) {
 				if (!entry.isDirectory) {
 					if (sftp === null) throw new Error("No SFTP connection available");
 					try {
-						const dirPath = path.dirname(fullPath);
+						const dirPath = pathModule.dirname(fullPath);
 						await execAsyncRemote(
 							application.serverId,
 							`mkdir -p "${dirPath}"`,
@@ -82,7 +82,7 @@ export const unzipDrop = async (zipFile: File, application: Application) => {
 				if (entry.isDirectory) {
 					await fs.mkdir(fullPath, { recursive: true });
 				} else {
-					await fs.mkdir(path.dirname(fullPath), { recursive: true });
+					await fs.mkdir(pathModule.dirname(fullPath), { recursive: true });
 					await fs.writeFile(fullPath, entry.getData());
 				}
 			}
@@ -131,4 +131,61 @@ const uploadFileToServer = (
 			resolve();
 		});
 	});
+};
+
+export const handleJarDrop = async (
+	jarFile: File,
+	application: Application,
+): Promise<{ isMule: boolean; jarFileName: string }> => {
+	let sftp: SFTPWrapper | null = null;
+
+	try {
+		const { appName } = application;
+		const { APPLICATIONS_PATH } = paths(!!application.serverId);
+		const outputPath = pathModule.join(APPLICATIONS_PATH, appName, "code");
+		
+		// Use original filename or default to app.jar
+		const jarFileName = jarFile.name.endsWith(".jar") 
+			? jarFile.name 
+			: `${jarFile.name}.jar`;
+		const jarPath = pathModule.join(outputPath, jarFileName);
+
+		// Ensure directory exists
+		if (application.serverId) {
+			await recreateDirectoryRemote(outputPath, application.serverId);
+		} else {
+			await recreateDirectory(outputPath);
+		}
+
+		// Get file data
+		console.log(`Processing JAR file: ${jarFile.name}, size: ${jarFile.size} bytes`);
+		const arrayBuffer = await jarFile.arrayBuffer();
+		const buffer = Buffer.from(arrayBuffer);
+		console.log(`JAR file buffer size: ${buffer.length} bytes`);
+
+		// Detect if it's a Mule JAR (check filename pattern)
+		const isMule = jarFile.name.toLowerCase().includes("mule") ||
+			jarFile.name.toLowerCase().includes("anypoint");
+
+		console.log(`Saving JAR file to: ${jarPath}`);
+		if (application.serverId) {
+			sftp = await getSFTPConnection(application.serverId);
+			if (sftp === null) throw new Error("No SFTP connection available");
+			await uploadFileToServer(sftp, buffer, jarPath);
+			console.log(`JAR file uploaded to remote server: ${jarPath}`);
+		} else {
+			await fs.writeFile(jarPath, buffer);
+			console.log(`JAR file saved locally: ${jarPath}`);
+			// Verify file was saved
+			const stats = await fs.stat(jarPath);
+			console.log(`JAR file saved successfully, size: ${stats.size} bytes`);
+		}
+
+		return { isMule, jarFileName };
+	} catch (error) {
+		console.error("Error processing JAR file:", error);
+		throw error;
+	} finally {
+		sftp?.end();
+	}
 };

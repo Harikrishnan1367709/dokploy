@@ -182,6 +182,23 @@ export const AddDomain = ({ id, type, domainId = "", children }: Props) => {
 		},
 	);
 
+	// Determine default port: 8081 for Mule apps (drop source with JAR), undefined otherwise
+	const getDefaultPort = () => {
+		if (type === "application" && application) {
+			// Check if it's a Mule app (drop source type typically means JAR file)
+			if (application.sourceType === "drop") {
+				// Check if port 8081 exists (Mule uses 8081)
+				const hasMulePort = application.ports?.some(
+					(p: { targetPort: number }) => p.targetPort === 8081,
+				);
+				if (hasMulePort) {
+					return 8081;
+				}
+			}
+		}
+		return undefined;
+	};
+
 	const form = useForm<Domain>({
 		resolver: zodResolver(domain),
 		defaultValues: {
@@ -189,7 +206,7 @@ export const AddDomain = ({ id, type, domainId = "", children }: Props) => {
 			path: undefined,
 			internalPath: undefined,
 			stripPath: false,
-			port: undefined,
+			port: getDefaultPort(),
 			https: false,
 			certificateType: undefined,
 			customCertResolver: undefined,
@@ -225,14 +242,14 @@ export const AddDomain = ({ id, type, domainId = "", children }: Props) => {
 				path: undefined,
 				internalPath: undefined,
 				stripPath: false,
-				port: undefined,
+				port: getDefaultPort(),
 				https: false,
 				certificateType: undefined,
 				customCertResolver: undefined,
 				domainType: type,
 			});
 		}
-	}, [form, data, isLoading, domainId]);
+	}, [form, data, isLoading, domainId, application]);
 
 	// Separate effect for handling custom cert resolver validation
 	useEffect(() => {

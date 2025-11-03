@@ -86,12 +86,12 @@ export const SaveDragNDrop = ({ applicationId }: Props) => {
 							name="zip"
 							render={({ field }) => (
 								<FormItem className="w-full ">
-									<FormLabel>Zip file</FormLabel>
+									<FormLabel>Deployment file (Zip or Jar)</FormLabel>
 									<FormControl>
 										<Dropzone
 											{...field}
 											dropMessage="Drop files or click here"
-											accept=".zip"
+											accept=".zip,.jar"
 											onChange={(e) => {
 												if (e instanceof FileList) {
 													field.onChange(e[0]);

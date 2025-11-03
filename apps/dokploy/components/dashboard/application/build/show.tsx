@@ -29,6 +29,7 @@ export enum BuildType {
 	nixpacks = "nixpacks",
 	static = "static",
 	railpack = "railpack",
+	mulesoft = "mulesoft",
 }
 
 const buildTypeDisplayMap: Record<BuildType, string> = {
@@ -38,6 +39,7 @@ const buildTypeDisplayMap: Record<BuildType, string> = {
 	[BuildType.heroku_buildpacks]: "Heroku Buildpacks",
 	[BuildType.paketo_buildpacks]: "Paketo Buildpacks",
 	[BuildType.static]: "Static",
+	[BuildType.mulesoft]: "Mulesoft",
 };
 
 const mySchema = z.discriminatedUnion("buildType", [
@@ -70,6 +72,9 @@ const mySchema = z.discriminatedUnion("buildType", [
 	z.object({
 		buildType: z.literal(BuildType.static),
 		isStaticSpa: z.boolean().default(false),
+	}),
+	z.object({
+		buildType: z.literal(BuildType.mulesoft),
 	}),
 ]);
 
@@ -126,6 +131,10 @@ const resetData = (data: ApplicationData): AddTemplate => {
 			return {
 				buildType: BuildType.railpack,
 				railpackVersion: data.railpackVersion || null,
+			};
+		case BuildType.mulesoft:
+			return {
+				buildType: BuildType.mulesoft,
 			};
 		default: {
 			const buildType = data.buildType as BuildType;
